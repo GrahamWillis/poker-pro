@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.toIntExact;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Created by graham on 08/07/16.
@@ -26,7 +25,6 @@ public class Evaluations {
     }
 
     public static Map<RankingGroupSize, Set<Deck.Rank>> evaluateRanks(Deck.Card[] cards) {
-       // return Arrays.stream(cards).map(Deck.Card::getRank).collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.counting()));
         Map<Deck.Rank, Long> countRank = Arrays.stream(cards)
                 .collect(Collectors.groupingBy(card -> card.getRank(),
                         Collectors.counting()));
@@ -74,12 +72,12 @@ public class Evaluations {
         }
     }
 
+    private static Deck.Rank[] allConsecutives =
+            Stream.concat(Arrays.stream(new Deck.Rank[] {Deck.Rank.ACE}), Arrays.stream(Deck.Rank.values()))
+                    .toArray(Deck.Rank[]::new);
+
     public static List<Consecutive> evaluateConsecutives(Deck.Card[] cards) {
 
-        Deck.Rank[] allConsecutives =
-                Stream.concat(Arrays.stream(new Deck.Rank[] {Deck.Rank.ACE}), Arrays.stream(Deck.Rank.values()))
-                        .toArray(Deck.Rank[]::new);
-        
         Deck.Rank[] pair = new Deck.Rank[2];
         short length = 0;
         Deck.Rank startRank = null;
@@ -114,6 +112,128 @@ public class Evaluations {
             }
         }
         
+        return consecutives;
+    }
+
+    public static class Flush {
+        private Deck.Suit suit;
+        private Deck.Rank highCard;
+        short size;
+
+        public Flush(Deck.Suit suit, Deck.Rank highCard, short size) {
+            this.suit = suit;
+            this.highCard = highCard;
+            this.size = size;
+        }
+        public Flush(Deck.Suit suit, Deck.Rank highCard, Long size) {
+            this(suit, highCard, (short)toIntExact(size));
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Flush flush = (Flush) o;
+
+            if (size != flush.size) return false;
+            if (suit != flush.suit) return false;
+            return highCard == flush.highCard;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = suit.hashCode();
+            result = 31 * result + highCard.hashCode();
+            result = 31 * result + (int) size;
+            return result;
+        }
+    }
+
+    public static List<Flush> evaluateFlushes(Deck.Card[] cards) {
+        return Arrays.stream(cards)
+                    .collect(Collectors.groupingBy(e -> e.getSuit(), Collectors.toSet()))
+                        .entrySet().stream().map(f ->
+                            new Flush(f.getKey(), f.getValue().stream().map(Deck.Card::getRank).max(Deck.simpleComparitor).get(),
+                                    (short)f.getValue().size())).collect(Collectors.toList());
+    }
+
+    public static class ConsecutiveFlush {
+        Deck.Rank startRank = null;
+        Deck.Rank endRank = null;
+        private Deck.Suit suit;
+        public ConsecutiveFlush(Deck.Rank startRank, Deck.Rank endRank, Deck.Suit suit) {
+            this.startRank = startRank;
+            this.endRank = endRank;
+            this.suit = suit;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            ConsecutiveFlush that = (ConsecutiveFlush) o;
+
+            if (startRank != that.startRank) return false;
+            if (endRank != that.endRank) return false;
+            return suit == that.suit;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = startRank.hashCode();
+            result = 31 * result + endRank.hashCode();
+            result = 31 * result + suit.hashCode();
+            return result;
+        }
+    }
+
+
+
+    public static List<ConsecutiveFlush> evaluateConsecutiveFlushes(Deck.Card[] cards) {
+        Map<Deck.Suit, Set<Deck.Rank>> ranksBySuits = Arrays.stream(cards)
+                .collect(Collectors.groupingBy(e -> e.getSuit(),
+                        Collectors.mapping(e -> e.getRank(), Collectors.toSet())));
+
+        List<ConsecutiveFlush> consecutives = new ArrayList<>();
+
+        ranksBySuits.entrySet().forEach(p -> {
+            Deck.Rank[] pair = new Deck.Rank[2];
+            Deck.Rank startRank = null;
+            Deck.Rank endRank = null;
+            Set<Deck.Rank> ranks = p.getValue();
+            Deck.Suit suit = p.getKey();
+            short length = 0;
+
+            for(int i = 0; i < allConsecutives.length + 1; i++) {
+                if (i == 0) {
+                    pair[0] = null;
+                    pair[1] = allConsecutives[i];
+                } else if(i == allConsecutives.length) {
+                    pair[0] = allConsecutives[i - 1];
+                    pair[1] = null;
+                } else {
+                    pair[0] = allConsecutives[i - 1];
+                    pair[1] = allConsecutives[i];
+                }
+
+                if (ranks.contains(pair[0]) && ranks.contains(pair[1]) && length == (short)0) {
+                    length++;
+                    startRank = pair[0];
+                    endRank = pair[1];
+                } else if (ranks.contains(pair[0]) && ranks.contains(pair[1]) && length != (short)0) {
+                    length++;
+                    endRank = pair[1];
+                } else if (ranks.contains(pair[0]) && !ranks.contains(pair[1]) && length != (short)0) {
+                    endRank = pair[0];
+                    consecutives.add(new ConsecutiveFlush(startRank, endRank, suit));
+                    length = (short)0;
+                }
+            }
+        });
+
         return consecutives;
     }
 }

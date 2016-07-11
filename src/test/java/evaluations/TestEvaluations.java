@@ -5,7 +5,6 @@ import org.junit.Test;
 
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -155,5 +154,33 @@ public class TestEvaluations {
         assertEquals(evaluated, expected);
     }
 
+    @Test
+    public void testForFiveFlush() {
+        List<Evaluations.Flush> expected = new ArrayList<>();
+        expected.add(new Evaluations.Flush(Deck.Suit.SPADES, Deck.Rank.JACK, (short)1));
+        expected.add(new Evaluations.Flush(Deck.Suit.CLUBS, Deck.Rank.ACE, (short)5));
+        List<Evaluations.Flush> evaluated = Evaluations.evaluateFlushes(new Deck.Card[]{
+            new Deck.Card(Deck.Rank.ACE, Deck.Suit.CLUBS),
+            new Deck.Card(Deck.Rank.THREE, Deck.Suit.CLUBS),
+            new Deck.Card(Deck.Rank.FIVE, Deck.Suit.CLUBS),
+            new Deck.Card(Deck.Rank.SEVEN, Deck.Suit.CLUBS),
+            new Deck.Card(Deck.Rank.NINE, Deck.Suit.CLUBS),
+            new Deck.Card(Deck.Rank.JACK, Deck.Suit.SPADES)
+        });
+        assertEquals(evaluated, expected);
+    }
 
+    @Test
+    public void testForFiveConsecutiveFlush() {
+        List<Evaluations.ConsecutiveFlush> expected = new ArrayList<>();
+        expected.add(new Evaluations.ConsecutiveFlush(Deck.Rank.ACE, Deck.Rank.FIVE, Deck.Suit.CLUBS));
+        List<Evaluations.ConsecutiveFlush> evaluated = Evaluations.evaluateConsecutiveFlushes(new Deck.Card[]{
+                new Deck.Card(Deck.Rank.ACE, Deck.Suit.CLUBS),
+                new Deck.Card(Deck.Rank.TWO, Deck.Suit.CLUBS),
+                new Deck.Card(Deck.Rank.THREE, Deck.Suit.CLUBS),
+                new Deck.Card(Deck.Rank.FOUR, Deck.Suit.CLUBS),
+                new Deck.Card(Deck.Rank.FIVE, Deck.Suit.CLUBS)
+        });
+        assertEquals(evaluated, expected);
+    }
 }

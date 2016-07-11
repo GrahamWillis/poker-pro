@@ -30,7 +30,23 @@ public class Deck {
         Rank(short value) {
             this.value = value;
         }
+
+        public short getValue() {
+            return value;
+        }
     }
+
+    public static Comparator<Rank> simpleComparitor =
+            (Rank r1, Rank r2)-> {
+                if (r1.getValue()-r2.getValue()>=1) {
+                    return 1;
+                } else if (r1.getValue()-r2.getValue()<=-1) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            };
+
 
     public static class Card {
         private Rank rank;
@@ -57,7 +73,7 @@ public class Deck {
         }
     }
 
-    Comparator<Card> newPacket = new Comparator<Card>() {
+    public Comparator<Card> newPacket = new Comparator<Card>() {
         public int compare(Card c1, Card c2) {
             return c1.getRank() == c2.getRank() ? c1.getSuit().compareTo(c2.getSuit()) : c1.getRank().compareTo(c2.getRank());
         }
